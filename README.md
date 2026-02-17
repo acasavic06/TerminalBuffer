@@ -127,5 +127,5 @@ Planned enhancements for wide character handling:
 - Scrollback management for multi-cell characters
 - Proper handling in trim, fill, and clear operations
 
-
-
+**Author**: Aleksandar Savić  
+**Github**: @acasavic06
