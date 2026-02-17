@@ -5,8 +5,8 @@ import org.junit.jupiter.api.Test
 
 class TerminalBufferTest {
 
-    // Testing Cursor movement up,down, left,right
     @Test
+    // Testing Cursor movement up,down, left,right
     fun testCursorMovement() {
         val buffer = TerminalBuffer(width = 5, height = 5, scrollbackMax = 5)
 
@@ -25,6 +25,7 @@ class TerminalBufferTest {
     }
 
     @Test
+    // Setting cursor out of bounds must throw TerminalException.
     fun testCursorBounds() {
         val buffer = TerminalBuffer(width = 10, height = 5, scrollbackMax = 10)
 
@@ -38,6 +39,8 @@ class TerminalBufferTest {
     }
 
     @Test
+    // writeText should wrap text across lines when reaching screen width
+    // and correctly update the cursor position.
     fun testWriteTextWrapsAndScrolls() {
         val buffer = TerminalBuffer(width = 5, height = 2, scrollbackMax = 3)
 
@@ -50,6 +53,7 @@ class TerminalBufferTest {
     }
 
     @Test
+    // Inserting text at a specific position should shift content and wrap correctly.
     fun testInsertTextLineFitsInLine() {
         val buffer = TerminalBuffer(width = 8, height = 3, scrollbackMax = 5)
 
@@ -62,6 +66,7 @@ class TerminalBufferTest {
 
     // Scrollback functionality
     @Test
+    // Checks that when inserting text that overflows the line, the excess characters are correctly pushed to scrollback
     fun testInsertTextLineOverflowToScrollback() {
         val buffer = TerminalBuffer(width = 5, height = 1, scrollbackMax = 5)
 
@@ -73,20 +78,23 @@ class TerminalBufferTest {
     }
 
     @Test
+    // Verifies that getFullContent includes lines from scrollback and removes the oldest lines when scrollback is full
     fun testFullContentIncludesScrollback() {
-        val buffer = TerminalBuffer(width = 5, height = 2, scrollbackMax = 5)
+        val buffer = TerminalBuffer(width = 5, height = 2, scrollbackMax = 1)
 
         buffer.writeText("12345")
         buffer.writeText("67890")
         buffer.writeText("ABCDE")
+        buffer.writeText("FGH")
 
         val fullContent = buffer.getFullContent()
 
-        assertTrue(fullContent.contains("12345"))
+        assertFalse(fullContent.contains("12345"))
         assertTrue(fullContent.contains("ABCDE"))
     }
 
     @Test
+    // Checks that a line can be filled completely with a given character
     fun testFillLine() {
         val buffer = TerminalBuffer(width = 4, height = 2, scrollbackMax = 3)
 
@@ -127,7 +135,7 @@ class TerminalBufferTest {
         assertEquals("   ", buffer.getLine(1))
     }
 
-
+    @Test
     //  !!!!!       IMPORTANT       !!!!!
     // insertTextLine operates on the entire line, including blank spaces.
     // For example, if the line is "Jet  " (width = 5) and we insert "Brains" after 'J',
@@ -141,8 +149,6 @@ class TerminalBufferTest {
     // Important: getLine(row) returns the full line with spaces, not just the visible text.
     // If you want to ignore trailing spaces when inserting, use getLine(row).trimEnd().
     // This way "Jet" will be treated as length 3 instead of "Jet  " length 5.
-
-    @Test
     fun test1() {
         val buffer = TerminalBuffer(width = 5, height = 4, scrollbackMax = 5)
 
@@ -172,6 +178,8 @@ class TerminalBufferTest {
 
     // Testing resizing
     @Test
+    // Verifies that resizing to smaller dimensions keeps part of the content on screen
+    // and moves the overflow text into scrollback history.
     fun testResizeLargerKeepsContent() {
         val buffer = TerminalBuffer(width = 3, height = 3, scrollbackMax = 5)
 
@@ -188,6 +196,7 @@ class TerminalBufferTest {
     }
 
     @Test
+    // Verifies that when the buffer is resized smaller, the overflow text is written into scrollback.
     fun testResizeSmallerMovesOverflowToScrollback() {
         val buffer = TerminalBuffer(width = 5, height = 3, scrollbackMax = 5)
 
@@ -208,6 +217,17 @@ class TerminalBufferTest {
     }
 
     @Test
+    /* Checking position of cursor when resizing screen
+    Before resizing screen, _ -> blank space and ^ cursor postion
+    _____
+    ___^_
+
+    After resizing screen,
+    ________^_
+    __________
+    __________
+    __________
+    */
     fun testResizePreservesCursorPosition() {
         val buffer = TerminalBuffer(width = 5, height = 2, scrollbackMax = 5)
 
@@ -219,20 +239,10 @@ class TerminalBufferTest {
         assertEquals(8, buffer.cursorCol)
     }
 
-    /* Before resizing screen, _ -> blank space and ^ cursor postion
-    _____
-    ___^_
-
-    After resizing screen,
-    ________^_
-    __________
-    __________
-    __________
-    */
-
 
     //Testing changeMaxScrollBack
     @Test
+    // Verifies that changing the maximum scrollback size trims existing scrollback lines if necessary
     fun testChangeMaxScrollBackReducesSize() {
         val buffer = TerminalBuffer(width = 3, height = 1, scrollbackMax = 5)
 
@@ -251,6 +261,7 @@ class TerminalBufferTest {
     }
 
     @Test
+    // Checks that increasing max scrollback does not remove existing scrollback lines
     fun testChangeMaxScrollBackIncreaseDoesNotRemove() {
         val buffer = TerminalBuffer(width = 3, height = 1, scrollbackMax = 1)
 
@@ -266,6 +277,7 @@ class TerminalBufferTest {
     }
 
     @Test
+    // Verifies that when the buffer is resized smaller, the overflow text is written into scrollback.
     fun testChangeMaxScrollBackRemovesOldestLines() {
         val buffer = TerminalBuffer(width = 3, height = 1, scrollbackMax = 5)
 
@@ -288,5 +300,4 @@ class TerminalBufferTest {
 
         assertFalse(content.contains("111"))
     }
-
 }

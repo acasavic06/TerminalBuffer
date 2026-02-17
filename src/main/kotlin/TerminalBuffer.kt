@@ -2,9 +2,6 @@ package terminal
 
 //import jdk.internal.agent.Agent.getText
 
-//var bold : Boolean = false,
-//var italic : Boolean = false,
-//var underline : Boolean = false
 enum class Color{DEFAULT,BLACK,WHITE,RED,GREEN,BLUE}
 enum class Style { BOLD, ITALIC, UNDERLINE }
 
@@ -20,9 +17,6 @@ data class Cell(
             foreground = this.foreground,
             background = this.background,
             styles = this.styles.toSet()
-            /*bold=this.bold,
-            italic=this.italic,
-            underline=this.underline,*/
         )
     }
 }
@@ -192,10 +186,6 @@ class TerminalBuffer(
             screen[row][i] = currentAttr.copyAttributes().apply { char = ch }
         }
 
-        /*if (newLine.length > width && row+1<height){
-            insertTextLine(row+1,0,newLine.substring(width))
-        }*/
-
         if (newLine.length > width){
             val nextLine = newLine.substring(width)
 
@@ -261,13 +251,6 @@ class TerminalBuffer(
         val cursorPosition = cursorRow*width+cursorCol
         cursorRow=minOf(cursorPosition/newWidth, newHeight-1)
         cursorCol=minOf(cursorPosition%newWidth, newWidth-1)
-        /*if (cursorPosition>newWidth*newHeight){
-            cursorRow=0
-            cursorCol = 0
-        }else{
-            cursorRow = cursorPosition / newWidth
-            cursorCol = cursorPosition % newWidth
-        }*/
 
         screen = newScreen
         width = newWidth
@@ -284,21 +267,3 @@ class TerminalBuffer(
         scrollbackMax=size
     }
 }
-
-/*
-val newScreen = Array(newWidth) { Array(newHeight) { Cell() } }
-val text=getScreenContent()
-var screenText=text
-var scrollbackText = ""
-
-if (text.length > newWidth*newHeight){
-    screenText=screenText.substring(0, newWidth*newHeight)
-    scrollbackText = text.substring(newWidth*newHeight)
-}
-
-clearContent()
-width=newWidth
-height=newHeight
-writeText(screenText)
-*/
-
