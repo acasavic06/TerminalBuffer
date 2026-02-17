@@ -127,7 +127,6 @@ class TerminalBuffer(
                     cursorRow=height-1
                 }
             }
-
         }
     }
 
@@ -148,6 +147,51 @@ class TerminalBuffer(
         screen[height-1]=Array(width){Cell()}
     }
 
+    fun overWriteLine(text: String) {
+        cursorCol = 0
+
+        writeText(text)
+
+        if (text.length < width) {
+            for (col in text.length until width) {
+                screen[cursorRow][col] = currentAttr.copyAttributes().apply { char = ' ' }
+            }
+        }
+    }
+
+
+    fun insertTextLine(row: Int, col: Int, text: String){
+        if (!isInBounds(row, col)) {
+            throw TerminalException("Out of bounds: ($row,$col)")
+        }
+
+        val currentLine = getLine(row)
+        val newLine = currentLine.substring(0, col) + text + currentLine.substring(col)
+
+        for (i in 0 until width){
+            val ch = if (i < newLine.length) newLine[i] else ' '
+            screen[row][i] = currentAttr.copyAttributes().apply { char = ch }
+        }
+
+        if (newLine.length > width && row+1<height){
+            insertTextLine(row+1,0,newLine.substring(width))
+
+        }
+
+        cursorRow=row + newLine.length / width
+        cursorCol = newLine.length % width
+    }
+
+    fun fillLine(row: Int, ch: Char = ' ') {
+        if (!isInBounds(row,0)){
+            throw TerminalException("Row out of bounds: $row")
+        }
+        for (col in 0 until width) {
+            screen[row][col] = currentAttr.copyAttributes().apply { char = ch }
+        }
+    }
+
+
 }
 
 /*var text=""
@@ -162,4 +206,23 @@ for (line in scrollback){
 
 text+=getScreenContent()
 
-return text*/
+return text
+
+
+if(newLine.length>width){
+            val nextLine=newLine.substring(width)
+            writeText(newLine.take(width))
+            if (row+1 < height){
+                insertTextLine(row+1,0,nextLine)
+            }else{
+                scrollback.add(Array(width) {Cell()}.apply{
+                    for (i in nextLine.indices.take(width)) {
+                        this[i] = currentAttr.copyAttributes().apply { char = nextLine[i]}
+                    }
+                })
+            }
+        }else{
+
+            writeText(newLine)
+        }
+*/
