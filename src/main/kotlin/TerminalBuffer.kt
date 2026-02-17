@@ -1,7 +1,5 @@
 package terminal
 
-//import jdk.internal.agent.Agent.getText
-
 enum class Color{DEFAULT,BLACK,WHITE,RED,GREEN,BLUE}
 enum class Style { BOLD, ITALIC, UNDERLINE }
 
