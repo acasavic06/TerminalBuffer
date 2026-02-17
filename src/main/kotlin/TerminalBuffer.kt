@@ -143,8 +143,26 @@ class TerminalBuffer(
         clearContent()
     }
 
-    fun insertEmptyLine(){ //at the bottom of the screen
+    /*  Here i did:
+        Scrolls the screen up by one line.
+        Moves the top line to scrollback (respecting max size),
+        shifts all lines up, adds a new empty line at the bottom,
+        and resets the cursor to the start of that line.
+    */
+    fun insertEmptyLine(){
+        scrollback.add(screen[0])
+        if (scrollback.size>scrollbackMax){
+            scrollback.removeAt(0)
+        }
+
+        for (row in 0 until height-1){
+            screen[row]=screen[row+1]
+        }
+
         screen[height-1]=Array(width){Cell()}
+
+        cursorRow = height - 1
+        cursorCol = 0
     }
 
     fun overWriteLine(text: String) {
@@ -159,7 +177,6 @@ class TerminalBuffer(
         }
     }
 
-
     fun insertTextLine(row: Int, col: Int, text: String){
         if (!isInBounds(row, col)) {
             throw TerminalException("Out of bounds: ($row,$col)")
@@ -173,12 +190,28 @@ class TerminalBuffer(
             screen[row][i] = currentAttr.copyAttributes().apply { char = ch }
         }
 
-        if (newLine.length > width && row+1<height){
+        /*if (newLine.length > width && row+1<height){
             insertTextLine(row+1,0,newLine.substring(width))
+        }*/
 
+        if (newLine.length > width){
+            val nextLine = newLine.substring(width)
+
+            if(row+1<height){
+                insertTextLine(row+1,0,newLine.substring(width))
+            }else{ //add to scrollback
+                val overflow = Array(width) { Cell() }
+                for (i in nextLine.indices.take(width)) {
+                    overflow[i] = currentAttr.copyAttributes().apply { char = nextLine[i] }
+                }
+                scrollback.add(overflow)
+                if (scrollback.size > scrollbackMax) {
+                    scrollback.removeAt(0)
+                }
+            }
         }
 
-        cursorRow=row + newLine.length / width
+        cursorRow = row + newLine.length / width
         cursorCol = newLine.length % width
     }
 
