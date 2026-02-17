@@ -53,6 +53,46 @@ class TerminalBuffer(
         }
     }
 
+    fun getLine(row: Int): String{
+        if (row in 0 until height){
+            return screen[row].joinToString("") {it.char.toString()}
+        }
+        throw TerminalException("Row out of bounds: $row")
+    }
+
+    fun getChar(row: Int, col: Int): Char{
+        if (isInBounds(row,col)){
+            return screen[row][col].char
+        }
+        throw TerminalException("Cursor out of bounds: ($row,$col)")
+    }
+
+    fun getAttributes(row: Int, col: Int): Cell{
+        if (isInBounds(row,col)){
+            return screen[row][col].copyAttributes()
+        }
+        throw TerminalException("Cursor out of bounds: ($row,$col)")
+    }
+
+    fun getScreenContent(): String{
+        val text = StringBuilder()
+        for (row in 0 until height) {
+            text.append(getLine(row)).append("\n")
+        }
+        return text.toString()
+
+    }
+
+    fun getFullContent(): String{
+        val text = StringBuilder()
+        for (line in scrollback){
+            text.append(line.joinToString("") {it.char.toString()})
+            text.append("\n")
+        }
+        text.append(getScreenContent())
+        return text.toString()
+    }
+
     fun moveCursorUp(n: Int) {
         cursorRow = (cursorRow-n).coerceAtLeast(0)
     }
@@ -91,37 +131,21 @@ class TerminalBuffer(
         }
     }
 
-    fun getLine(row: Int): String{
-        if (row in 0 until height){
-            return screen[row].joinToString("") {it.char.toString()}
+    fun clearContent() {
+        for (row in 0 until height){
+            screen[row]=Array(width){Cell()}
         }
-        throw TerminalException("Row out of bounds: $row")
+        cursorRow=0
+        cursorCol=0
     }
 
-    fun getChar(row: Int, col: Int): Char{
-        if (isInBounds(row,col)){
-            return screen[row][col].char
-        }
-        throw TerminalException("Cursor out of bounds: ($row,$col)")
+    fun clearFullContent() {
+        scrollback.clear()
+        clearContent()
     }
 
-    fun getScreenContent(): String{
-        val text = StringBuilder()
-        for (row in 0 until height) {
-            text.append(getLine(row)).append("\n")
-        }
-        return text.toString()
-
-    }
-
-    fun getFullContent(): String{
-        val text = StringBuilder()
-        for (line in scrollback){
-            text.append(line.joinToString("") {it.char.toString()})
-            text.append("\n")
-        }
-        text.append(getScreenContent())
-        return text.toString()
+    fun insertEmptyLine(){ //at the bottom of the screen
+        screen[height-1]=Array(width){Cell()}
     }
 
 }
