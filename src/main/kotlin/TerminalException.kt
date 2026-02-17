@@ -1,3 +1,4 @@
 package terminal
 
-class TerminalException (message : String) : Exception(message)
+class TerminalException (message : String)
+    : Exception(message)
