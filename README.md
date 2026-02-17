@@ -1,4 +1,4 @@
-# TerminalBuffer Project
+# Kotlin TerminalBuffer
 
 ## Description
 
