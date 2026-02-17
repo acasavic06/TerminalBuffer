@@ -1,5 +1,7 @@
 package terminal
 
+//import jdk.internal.agent.Agent.getText
+
 //var bold : Boolean = false,
 //var italic : Boolean = false,
 //var underline : Boolean = false
@@ -31,7 +33,7 @@ class TerminalBuffer(
     var height: Int,
     var scrollbackMax: Int
 ){
-    val screen: Array<Array<Cell>> = Array(height){Array(width){Cell()}}
+    var screen: Array<Array<Cell>> = Array(height){Array(width){Cell()}}
 
     val scrollback: MutableList<Array<Cell>> = mutableListOf()
 
@@ -210,7 +212,6 @@ class TerminalBuffer(
                 }
             }
         }
-
         cursorRow = row + newLine.length / width
         cursorCol = newLine.length % width
     }
@@ -224,38 +225,80 @@ class TerminalBuffer(
         }
     }
 
+    fun resize(newWidth: Int, newHeight: Int) {
+        val text = getScreenContent().replace("\n","")
+        val newScreen = Array(newHeight) { Array(newWidth) { Cell() } }
+        var index=0
 
-}
-
-/*var text=""
-        for (row in 0 until height){
-            text+=getLine(row)+"\n"
-        }
-        return text*/
-/*var text=""
-for (line in scrollback){
-    text+=line.joinToString("") {it.char.toString()}+ "\n"
-}
-
-text+=getScreenContent()
-
-return text
-
-
-if(newLine.length>width){
-            val nextLine=newLine.substring(width)
-            writeText(newLine.take(width))
-            if (row+1 < height){
-                insertTextLine(row+1,0,nextLine)
-            }else{
-                scrollback.add(Array(width) {Cell()}.apply{
-                    for (i in nextLine.indices.take(width)) {
-                        this[i] = currentAttr.copyAttributes().apply { char = nextLine[i]}
-                    }
-                })
+        for (row in 0 until newHeight){
+            for (col in 0 until newWidth){
+                if (index < width*height){
+                    newScreen[row][col]=screen[index/width][index%width].copyAttributes().apply {char = text[index]}
+                }else{
+                    newScreen[row][col].char= ' '
+                }
+                index++
             }
-        }else{
-
-            writeText(newLine)
         }
+
+        if (index < text.length) {
+            val remaining = text.substring(index)
+            val rows = remaining.chunked(newWidth)
+            for (line in rows){
+                val cells = Array(newWidth) { Cell() }
+
+                for (i in line.indices) {
+                    cells[i].char = line[i]
+                }
+                scrollback.add(cells)
+                if (scrollback.size > scrollbackMax) {
+                    scrollback.removeAt(0)
+                }
+            }
+        }
+
+
+        val cursorPosition = cursorRow*width+cursorCol
+        cursorRow=minOf(cursorPosition/newWidth, newHeight-1)
+        cursorCol=minOf(cursorPosition%newWidth, newWidth-1)
+        /*if (cursorPosition>newWidth*newHeight){
+            cursorRow=0
+            cursorCol = 0
+        }else{
+            cursorRow = cursorPosition / newWidth
+            cursorCol = cursorPosition % newWidth
+        }*/
+
+        screen = newScreen
+        width = newWidth
+        height = newHeight
+    }
+
+    fun changeMaxScrollBack(size: Int) {
+        if (size<scrollbackMax){
+            val toRemove = (scrollback.size - size).coerceAtLeast(0)
+            repeat (toRemove){
+                scrollback.removeAt(0)
+            }
+        }
+        scrollbackMax=size
+    }
+}
+
+/*
+val newScreen = Array(newWidth) { Array(newHeight) { Cell() } }
+val text=getScreenContent()
+var screenText=text
+var scrollbackText = ""
+
+if (text.length > newWidth*newHeight){
+    screenText=screenText.substring(0, newWidth*newHeight)
+    scrollbackText = text.substring(newWidth*newHeight)
+}
+
+clearContent()
+width=newWidth
+height=newHeight
+writeText(screenText)
 */
+

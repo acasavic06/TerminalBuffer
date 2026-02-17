@@ -168,4 +168,125 @@ class TerminalBufferTest {
         assertEquals("tet  ", line20)
         assertEquals("Is   ", line30)
     }
+
+
+    // Testing resizing
+    @Test
+    fun testResizeLargerKeepsContent() {
+        val buffer = TerminalBuffer(width = 3, height = 3, scrollbackMax = 5)
+
+        buffer.writeText("ABCDEF") // popuni 2 reda
+
+        buffer.resize(4, 3)
+
+        assertEquals(4, buffer.width)
+        assertEquals(3, buffer.height)
+
+        assertEquals("ABCD", buffer.getLine(0))
+        assertEquals("EF  ", buffer.getLine(1))
+        assertEquals("    ", buffer.getLine(2))
+    }
+
+    @Test
+    fun testResizeSmallerMovesOverflowToScrollback() {
+        val buffer = TerminalBuffer(width = 5, height = 3, scrollbackMax = 5)
+
+        buffer.writeText("ABCDEFGHIJKLMN")
+        buffer.resize(3, 2)
+
+        assertEquals(3, buffer.width)
+        assertEquals(2, buffer.height)
+
+        assertEquals("ABC", buffer.getLine(0))
+        assertEquals("DEF", buffer.getLine(1))
+
+        val fullContent = buffer.getFullContent()
+
+        assertTrue(fullContent.contains("GHI"))
+        assertTrue(fullContent.contains("JKL"))
+        assertTrue(fullContent.contains("MN"))
+    }
+
+    @Test
+    fun testResizePreservesCursorPosition() {
+        val buffer = TerminalBuffer(width = 5, height = 2, scrollbackMax = 5)
+
+        buffer.setCursor(1, 3)
+
+        buffer.resize(10, 4)
+
+        assertEquals(0, buffer.cursorRow)
+        assertEquals(8, buffer.cursorCol)
+    }
+
+    /* Before resizing screen, _ -> blank space and ^ cursor postion
+    _____
+    ___^_
+
+    After resizing screen,
+    ________^_
+    __________
+    __________
+    __________
+    */
+
+
+    //Testing changeMaxScrollBack
+    @Test
+    fun testChangeMaxScrollBackReducesSize() {
+        val buffer = TerminalBuffer(width = 3, height = 1, scrollbackMax = 5)
+
+        buffer.writeText("AAAA")
+        buffer.insertEmptyLine()
+        buffer.writeText("BBBB")
+        buffer.insertEmptyLine()
+        buffer.writeText("CCCC")
+        buffer.insertEmptyLine()
+
+        assertTrue(buffer.scrollback.size > 0)
+
+        buffer.changeMaxScrollBack(1)
+
+        assertEquals(1, buffer.scrollback.size)
+    }
+
+    @Test
+    fun testChangeMaxScrollBackIncreaseDoesNotRemove() {
+        val buffer = TerminalBuffer(width = 3, height = 1, scrollbackMax = 1)
+
+        buffer.writeText("AAAA")
+        buffer.insertEmptyLine()
+
+        val oldSize = buffer.scrollback.size
+
+        buffer.changeMaxScrollBack(10)
+
+        assertEquals(oldSize, buffer.scrollback.size)
+        assertEquals(10, buffer.scrollbackMax)
+    }
+
+    @Test
+    fun testChangeMaxScrollBackRemovesOldestLines() {
+        val buffer = TerminalBuffer(width = 3, height = 1, scrollbackMax = 5)
+
+        buffer.writeText("111")
+        buffer.insertEmptyLine()
+
+        buffer.writeText("222")
+        buffer.insertEmptyLine()
+
+        buffer.writeText("333")
+        buffer.insertEmptyLine()
+
+        buffer.changeMaxScrollBack(2)
+
+        assertEquals(2, buffer.scrollback.size)
+
+        val content = buffer.scrollback.joinToString("") {
+            it.joinToString("") { c -> c.char.toString() }
+        }
+
+        assertFalse(content.contains("111"))
+    }
+
 }
